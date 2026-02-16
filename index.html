@@ -1,140 +1,95 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>MoneyOS</title>
-
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="https://cdn.paddle.com/paddle/v2/paddle.js"></script>
-
-<style>
-body{
-  margin:0;
-  font-family: 'Inter', sans-serif;
-  background: linear-gradient(135deg,#0f172a,#0c0f1c);
-  color:white;
-  display:flex;
-  justify-content:center;
-  align-items:center;
-  height:100vh;
-}
-
-.container{
-  background: rgba(255,255,255,0.05);
-  backdrop-filter: blur(20px);
-  padding:40px;
-  border-radius:20px;
-  width:400px;
-  box-shadow:0 0 40px rgba(0,255,200,0.1);
-}
-
-h1{
-  text-align:center;
-  margin-bottom:30px;
-  font-weight:600;
-}
-
-input{
-  width:100%;
-  padding:12px;
-  margin-bottom:15px;
-  border:none;
-  border-radius:8px;
-  background:#1e293b;
-  color:white;
-}
-
-button{
-  width:100%;
-  padding:12px;
-  border:none;
-  border-radius:8px;
-  font-weight:600;
-  cursor:pointer;
-  margin-top:10px;
-}
-
-.primary{
-  background:linear-gradient(90deg,#00f5d4,#00bbf9);
-  color:black;
-}
-
-.secondary{
-  background:#1e293b;
-  color:white;
-}
-
-.price-box{
-  margin-top:25px;
-  padding:15px;
-  background:rgba(0,255,200,0.08);
-  border-radius:10px;
-  text-align:center;
-}
-</style>
+  <title>MoneyOS</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.paddle.com/paddle/v2/paddle.js"></script>
+  <style>
+    body {
+      background:#0f1115;
+      color:white;
+      font-family:system-ui;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      height:100vh;
+    }
+    .card {
+      background:rgba(255,255,255,0.05);
+      padding:40px;
+      border-radius:20px;
+      width:380px;
+      backdrop-filter:blur(20px);
+    }
+    input {
+      width:100%;
+      padding:12px;
+      margin:10px 0;
+      border-radius:8px;
+      border:none;
+    }
+    button {
+      width:100%;
+      padding:12px;
+      border:none;
+      border-radius:8px;
+      background:#00F5D4;
+      font-weight:bold;
+      margin-top:10px;
+    }
+  </style>
 </head>
-
 <body>
 
-<div class="container">
-  <h1>MoneyOS</h1>
+<div class="card">
+  <h2>MoneyOS</h2>
 
-  <input type="email" id="email" placeholder="Email">
-  <input type="password" id="password" placeholder="Password">
+  <input id="email" placeholder="Email" />
+  <input id="password" type="password" placeholder="Password" />
 
-  <button class="primary" onclick="signUp()">Sign Up</button>
-  <button class="secondary" onclick="login()">Login</button>
+  <button onclick="signup()">Sign Up</button>
+  <button onclick="login()">Login</button>
 
-  <div class="price-box">
-    <p><strong>Pro Plan</strong> — $29/month</p>
-    <button class="primary" onclick="buy()">Upgrade with Paddle</button>
-  </div>
+  <hr>
+
+  <button onclick="upgrade()">Upgrade to Pro ($29)</button>
 </div>
 
 <script>
-/* SUPABASE */
-const supabaseUrl = "https://ugjydppmolsxlkohhlkm.supabase.co"
-const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVnanlkcHBtb2xzeGxrb2hobGttIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzEyNTk0MDksImV4cCI6MjA4NjgzNTQwOX0.4DjiNkm2WCErx19wzFvtIA7zL8AFSFXmyugcZGK3KyM"
-const { createClient } = supabase
-const client = createClient(supabaseUrl, supabaseKey)
+const supabase = supabase.createClient(
+  "https://ugjydppmolsxlkohhlkm.supabase.co",
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVnanlkcHBtb2xzeGxrb2hobGttIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzEyNTk0MDksImV4cCI6MjA4NjgzNTQwOX0.4DjiNkm2WCErx19wzFvtIA7zL8AFSFXmyugcZGK3KyM"
+)
 
-/* SIGNUP */
-async function signUp(){
-  const email = document.getElementById("email").value
-  const password = document.getElementById("password").value
-
-  const { error } = await client.auth.signUp({ email,password })
-
-  if(error) alert(error.message)
-  else alert("Signup successful!")
+async function signup(){
+  const { data, error } = await supabase.auth.signUp({
+    email: email.value,
+    password: password.value
+  })
+  if(!error){
+    await supabase.from("users").insert({
+      id:data.user.id,
+      email:data.user.email
+    })
+    alert("Signed up")
+  }
 }
 
-/* LOGIN */
 async function login(){
-  const email = document.getElementById("email").value
-  const password = document.getElementById("password").value
-
-  const { error } = await client.auth.signInWithPassword({ email,password })
-
-  if(error) alert(error.message)
-  else window.location.href="dashboard.html"
+  const { error } = await supabase.auth.signInWithPassword({
+    email: email.value,
+    password: password.value
+  })
+  if(!error) window.location="dashboard.html"
 }
 
-/* PADDLE SETUP */
-Paddle.Environment.set("sandbox") // live için kaldır
 Paddle.Initialize({
   token: "test_e5bc211b2bcf70d6722aed10431"
 })
 
-function buy(){
+function upgrade(){
   Paddle.Checkout.open({
-    items: [
-      {
-        priceId: "pri_01khkrgmy56es9v4et8c2e3emc",
-        quantity: 1
-      }
-    ]
+    items:[{priceId:"pri_01khkrgmy56es9v4et8c2e3emc", quantity:1}]
   })
 }
 </script>

@@ -1,76 +1,73 @@
 <!DOCTYPE html>
 <html>
 <head>
-<meta charset="UTF-8">
-<title>Dashboard</title>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
-<style>
-body{
-  margin:0;
-  font-family:Inter;
-  background:#0f172a;
-  color:white;
-}
-
-nav{
-  background:#0c0f1c;
-  padding:20px;
-  display:flex;
-  justify-content:space-between;
-}
-
-.card{
-  margin:40px;
-  padding:30px;
-  background:#1e293b;
-  border-radius:15px;
-}
-button{
-  padding:10px 20px;
-  background:#00f5d4;
-  border:none;
-  border-radius:8px;
-  cursor:pointer;
-}
-</style>
+  <title>Dashboard</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="ai.js"></script>
+  <style>
+    body{background:#0f1115;color:white;font-family:system-ui;padding:40px;}
+    .card{background:#1a1f2b;padding:20px;border-radius:16px;margin-bottom:20px;}
+    button{background:#00F5D4;border:none;padding:10px 15px;border-radius:8px;}
+  </style>
 </head>
-
 <body>
 
-<nav>
-  <h3>MoneyOS Dashboard</h3>
-  <button onclick="logout()">Logout</button>
-</nav>
+<h1>Revenue Dashboard</h1>
 
 <div class="card">
-  <h2 id="userEmail"></h2>
-  <p>Welcome to your premium revenue system.</p>
+  <h3>Revenue Overview</h3>
+  <p id="stats"></p>
+</div>
+
+<div class="card">
+  <h3>Add Lead</h3>
+  <input id="lead_name" placeholder="Lead Name"/>
+  <input id="platform" placeholder="Platform"/>
+  <textarea id="message"></textarea>
+  <button onclick="addLead()">Add</button>
+</div>
+
+<div class="card">
+  <h3>AI Growth Plan</h3>
+  <button onclick="generateGrowthPlan()">Generate</button>
+  <div id="growthOutput"></div>
 </div>
 
 <script>
-const supabaseUrl = "https://ugjydppmolsxlkohhlkm.supabase.co"
-const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVnanlkcHBtb2xzeGxrb2hobGttIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzEyNTk0MDksImV4cCI6MjA4NjgzNTQwOX0.4DjiNkm2WCErx19wzFvtIA7zL8AFSFXmyugcZGK3KyM"
-const { createClient } = supabase
-const client = createClient(supabaseUrl, supabaseKey)
+const supabase = supabase.createClient(
+ "https://ugjydppmolsxlkohhlkm.supabase.co",
+ "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVnanlkcHBtb2xzeGxrb2hobGttIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzEyNTk0MDksImV4cCI6MjA4NjgzNTQwOX0.4DjiNkm2WCErx19wzFvtIA7zL8AFSFXmyugcZGK3KyM"
+)
 
-async function checkUser(){
-  const { data } = await client.auth.getUser()
-
-  if(!data.user){
-    window.location.href="index.html"
-  } else {
-    document.getElementById("userEmail").innerText =
-      "Logged in as: "+data.user.email
-  }
+async function addLead(){
+ const user = await supabase.auth.getUser()
+ await supabase.from("leads").insert({
+   user_id:user.data.user.id,
+   lead_name:lead_name.value,
+   platform:platform.value,
+   message:message.value
+ })
+ alert("Lead added")
 }
 
-async function logout(){
-  await client.auth.signOut()
-  window.location.href="index.html"
+async function loadStats(){
+ const user = await supabase.auth.getUser()
+ const {data} = await supabase.from("leads")
+   .select("*")
+   .eq("user_id",user.data.user.id)
+
+ let avg = 0
+ if(data.length>0){
+   avg = data.reduce((a,b)=>a+(b.intent_score||0),0)/data.length
+ }
+
+ stats.innerText = `
+   Total Leads: ${data.length}
+   Avg Intent Score: ${avg.toFixed(1)}
+ `
 }
 
-checkUser()
+loadStats()
 </script>
 
 </body>
